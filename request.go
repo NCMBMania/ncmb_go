@@ -22,7 +22,7 @@ type ExecOptions struct {
 	IsScript bool
 }
 
-func (request *Request) Post(class_name string, fields map[string]interface{}, multipart ...bool) (map[string]interface{}, error) {
+func (request *Request) Post(class_name string, fields map[string]interface{}, multipart ...bool) ([]byte, error) {
 	params := ExecOptions{Multipart: multipart != nil, Fields: &fields}
 	return request.Exec("POST", class_name, params)
 }
@@ -32,9 +32,9 @@ func (request *Request) Put() (map[string]interface{}, error) {
 	return nil, nil
 }
 
-func (request *Request) Get() (map[string]interface{}, error) {
-	// TODO
-	return nil, nil
+func (request *Request) Get(class_name string, queries map[string]interface{}, multipart ...bool) ([]byte, error) {
+	params := ExecOptions{Multipart: multipart != nil, Queries: &queries}
+	return request.Exec("GET", class_name, params)
 }
 
 func (request *Request) Delete() (bool, error) {
@@ -58,7 +58,7 @@ func (request *Request) Data(data *map[string]interface{}) ([]byte, error) {
 	return jsonData, nil
 }
 
-func (request *Request) Exec(method string, className string, params ExecOptions) (map[string]interface{}, error) {
+func (request *Request) Exec(method string, className string, params ExecOptions) ([]byte, error) {
 	opts := UrlOptions{ObjectId: params.ObjectId, DefinePath: params.Path, Queries: params.Queries}
 	s := Signature{ncmb: request.ncmb, IsScript: params.IsScript}
 	s.Initialize()
@@ -77,32 +77,29 @@ func (request *Request) Exec(method string, className string, params ExecOptions
 		}
 	}
 	client := &http.Client{}
-	if method == "POST" {
-		data, err := request.Data(params.Fields)
+	data := new(bytes.Buffer)
+	if method == "POST" || method == "PUT" {
+		d, err := request.Data(params.Fields)
 		if err != nil {
 			return nil, err
 		}
-		req, err := http.NewRequest(method, url, bytes.NewBuffer(data))
-		if err != nil {
-			return nil, err
-		}
-		for key, value := range headers {
-			req.Header.Add(key, value)
-		}
-		res, err := client.Do(req)
-		if err != nil {
-			return nil, err
-		}
-		// fmt.Println(res.Body)
-		body, err := ioutil.ReadAll(res.Body)
-		if err != nil {
-			return nil, err
-		}
-		var response map[string]interface{}
-		json.Unmarshal(body, &response)
-		return response, nil
-	} else {
-		res := map[string]interface{}{}
-		return res, nil
+		data = bytes.NewBuffer(d)
 	}
+
+	req, err := http.NewRequest(method, url, data)
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range headers {
+		req.Header.Add(key, value)
+	}
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+	return body, nil
 }

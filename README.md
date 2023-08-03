@@ -52,6 +52,20 @@ item.GetFloat("float")
 item.ObjectId
 ```
 
+### Query
+
+#### Fetch data
+
+```go
+query := ncmb.Query("Hello")
+query.EqualTo("msg1", "Hello")
+items, err := query.FetchAll()
+if err != nil {
+	fmt.Println(err)
+}
+fmt.Println(items[0].GetDate("createDate"))
+```
+
 ## License
 
 MIT.
