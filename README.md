@@ -2,6 +2,20 @@
 
 ## Usage
 
+### Install
+
+```
+go get -u github.com/NCMBMania/ncmb_go
+```
+
+### Import
+
+```go
+import (
+    "github.com/NCMBMania/ncmb_go"
+)
+```
+
 ### Initialize
 
 ```go
