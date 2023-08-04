@@ -2,10 +2,10 @@ package NCMB
 
 import (
 	"bytes"
-	"net/http"
 	"encoding/json"
-	// "fmt"
-	"io/ioutil"
+	"fmt"
+	"io"
+	"net/http"
 )
 
 type Request struct {
@@ -13,44 +13,49 @@ type Request struct {
 }
 
 type ExecOptions struct {
-	Fields *map[string]interface{}
-	ObjectId *string
-	Queries *map[string]interface{}
+	Fields            *map[string]interface{}
+	ObjectId          *string
+	Queries           *map[string]interface{}
 	AdditionalHeaders *map[string]string
-	Path *string
-	Multipart bool
-	IsScript bool
+	Path              *string
+	Multipart         bool
+	IsScript          bool
 }
 
-func (request *Request) Post(class_name string, fields map[string]interface{}, multipart ...bool) ([]byte, error) {
+type NCMBError struct {
+	Code  string `json:"code"`
+	Error string `json:"error"`
+}
+
+func (request *Request) Post(className string, fields map[string]interface{}, multipart ...bool) ([]byte, error) {
 	params := ExecOptions{Multipart: multipart != nil, Fields: &fields}
-	return request.Exec("POST", class_name, params)
+	return request.Exec("POST", className, params)
 }
 
-func (request *Request) Put() (map[string]interface{}, error) {
-	// TODO
-	return nil, nil
+func (request *Request) Put(className string, objectId string, fields map[string]interface{}, multipart ...bool) ([]byte, error) {
+	params := ExecOptions{Multipart: multipart != nil, ObjectId: &objectId, Fields: &fields}
+	return request.Exec("PUT", className, params)
 }
 
-func (request *Request) Get(class_name string, queries map[string]interface{}, multipart ...bool) ([]byte, error) {
+func (request *Request) Gets(className string, queries map[string]interface{}, multipart ...bool) ([]byte, error) {
 	params := ExecOptions{Multipart: multipart != nil, Queries: &queries}
-	return request.Exec("GET", class_name, params)
+	return request.Exec("GET", className, params)
 }
 
-func (request *Request) Delete() (bool, error) {
-	// TODO
-	return true, nil
+func (request *Request) Get(className string, objectId string) ([]byte, error) {
+	params := ExecOptions{ObjectId: &objectId}
+	return request.Exec("GET", className, params)
+}
+
+func (request *Request) Delete(className string, objectId string) ([]byte, error) {
+	params := ExecOptions{ObjectId: &objectId}
+	return request.Exec("DELETE", className, params)
 }
 
 func (request *Request) Data(data *map[string]interface{}) ([]byte, error) {
 	if data == nil {
 		return nil, nil
 	}
-	/*
-	for key, value := range *data {
-		fmt.Println(key, value)
-	}
-	*/
 	jsonData, err := json.Marshal(data)
 	if err != nil {
 		return nil, err
@@ -71,6 +76,9 @@ func (request *Request) Exec(method string, className string, params ExecOptions
 		return nil, err
 	}
 	headers := s.Headers(sig)
+	if !params.Multipart {
+		headers["Content-Type"] = "application/json"
+	}
 	if params.AdditionalHeaders != nil {
 		for key, value := range *params.AdditionalHeaders {
 			headers[key] = value
@@ -85,7 +93,7 @@ func (request *Request) Exec(method string, className string, params ExecOptions
 		}
 		data = bytes.NewBuffer(d)
 	}
-
+	fmt.Println(data)
 	req, err := http.NewRequest(method, url, data)
 	if err != nil {
 		return nil, err
@@ -97,9 +105,19 @@ func (request *Request) Exec(method string, className string, params ExecOptions
 	if err != nil {
 		return nil, err
 	}
-	body, err := ioutil.ReadAll(res.Body)
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, err
+	}
+	_, err = json.Marshal(string(body))
+	if err == nil {
+		var ncmbError NCMBError
+		err = json.Unmarshal(body, &ncmbError)
+		if err == nil && ncmbError.Code != "" {
+			return nil, fmt.Errorf("NCMBError: %s, %s", ncmbError.Code, ncmbError.Error)
+		}
 	}
 	return body, nil
 }

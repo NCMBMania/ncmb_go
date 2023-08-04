@@ -1,0 +1,6 @@
+github.com/harakeishi/gats v0.0.0-20230219034858-055bc915842a h1:w1k8jkMF813H+9hRjTZFbN+HqWmgnxSlrczNCQYUSPo=
+github.com/harakeishi/gats v0.0.0-20230219034858-055bc915842a/go.mod h1:YD5RD9SlvwtTugjiYpoC49fFsB9LoYFmLH+5N7lxmx8=
+github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
+github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
+golang.org/x/exp v0.0.0-20230801115018-d63ba01acd4b h1:r+vk0EmXNmekl0S0BascoeeoHk/L7wmaW2QF90K+kYI=
+golang.org/x/exp v0.0.0-20230801115018-d63ba01acd4b/go.mod h1:FXUEEKJgO7OQYeo8N01OfiKP8RXMtf6e8aTskBGqWdc=

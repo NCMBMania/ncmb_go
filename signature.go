@@ -1,40 +1,41 @@
 package NCMB
 
 import (
-	"fmt"
-	"reflect"
-	"strings"
-	"encoding/json"
-	"net/url"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"net/url"
+	"reflect"
 	"sort"
-	"golang.org/x/exp/slices"
+	"strings"
 	"time"
+
+	"golang.org/x/exp/slices"
 )
 
 type UrlOptions struct {
-	ObjectId *string
+	ObjectId   *string
 	DefinePath *string
-	Queries *map[string]interface{}
+	Queries    *map[string]interface{}
 }
 
 type Signature struct {
-	ncmb *NCMB
-	fqdn string
-	scriptFqdn string
-	signatureMethod string
+	ncmb             *NCMB
+	fqdn             string
+	scriptFqdn       string
+	signatureMethod  string
 	signatureVersion string
-	version string
-	scriptVersion string
-	IsScript bool
-	baseInfo map[string]string
-	time time.Time
+	version          string
+	scriptVersion    string
+	IsScript         bool
+	baseInfo         map[string]string
+	time             time.Time
 }
 
 type PathOptions struct {
-	ObjectId *string
+	ObjectId   *string
 	DefinePath *string
 }
 
@@ -46,10 +47,10 @@ func (s *Signature) Initialize() {
 	s.version = "2013-09-01"
 	s.scriptVersion = "2015-09-01"
 	s.baseInfo = map[string]string{
-		"SignatureMethod": s.signatureMethod,
-		"SignatureVersion": s.signatureVersion,
-		"X-NCMB-Application-Key": s.ncmb.applicationKey,
-		"X-NCMB-Timestamp": "",
+		"SignatureMethod":        s.signatureMethod,
+		"SignatureVersion":       s.signatureVersion,
+		"X-NCMB-Application-Key": s.ncmb.ApplicationKey,
+		"X-NCMB-Timestamp":       "",
 	}
 	s.time = time.Now()
 }
@@ -58,21 +59,20 @@ func (signature *Signature) Path(className string, options PathOptions) string {
 	if signature.IsScript {
 		return fmt.Sprintf("/%s/script/%s", signature.scriptVersion, className)
 	}
-	path := fmt.Sprintf("/%s", signature.version);
-  if options.DefinePath != nil {
-    return fmt.Sprintf("%s/%s", path, options.DefinePath)
-  }
+	path := fmt.Sprintf("/%s", signature.version)
+	if options.DefinePath != nil {
+		return fmt.Sprintf("%s/%s", path, *options.DefinePath)
+	}
 	if slices.Index([]string{"users", "push", "roles", "files", "installations"}, className) > -1 {
 		path = fmt.Sprintf("%s/%s", path, className)
 	} else {
 		path = fmt.Sprintf("%s/classes/%s", path, className)
 	}
 	if options.ObjectId != nil {
-		path = fmt.Sprintf("%s/%s", path, options.ObjectId)
+		path = fmt.Sprintf("%s/%s", path, *options.ObjectId)
 	}
 	return path
 }
-
 
 func (signature *Signature) Url(className string, options UrlOptions) (string, error) {
 	queryString := ""
@@ -91,12 +91,12 @@ func (signature *Signature) Url(className string, options UrlOptions) (string, e
 
 func (signature *Signature) Headers(signatureString string) map[string]string {
 	baseInfoMap := map[string]string{
-		"X-NCMB-Application-Key": signature.ncmb.applicationKey,
+		"X-NCMB-Application-Key": signature.ncmb.ApplicationKey,
 		"X-NCMB-Timestamp":       signature.time.Format("2006-01-02T15:04:05.999Z0700"),
-		"X-NCMB-Signature":			 signatureString,
+		"X-NCMB-Signature":       signatureString,
 	}
-	if signature.ncmb.sessionToken != "" {
-		baseInfoMap["X-NCMB-Apps-Session-Token"] = signature.ncmb.sessionToken
+	if signature.ncmb.SessionToken != "" {
+		baseInfoMap["X-NCMB-Apps-Session-Token"] = signature.ncmb.SessionToken
 	}
 	return baseInfoMap
 }
@@ -118,7 +118,7 @@ func (signature *Signature) QueryString(queries *map[string]interface{}) (string
 		}
 		queryList = append(queryList, fmt.Sprintf("%s=%s", key, url.QueryEscape(val)))
 	}
-  return strings.Join(queryList, "&"), nil
+	return strings.Join(queryList, "&"), nil
 }
 
 func (signature *Signature) Generate(method string, className string, options UrlOptions) (string, error) {
@@ -126,7 +126,7 @@ func (signature *Signature) Generate(method string, className string, options Ur
 	path := signature.Path(className, params)
 	// baseInfoの定義
 	baseInfoMap := map[string]string{
-		"X-NCMB-Application-Key": signature.ncmb.applicationKey,
+		"X-NCMB-Application-Key": signature.ncmb.ApplicationKey,
 		"SignatureMethod":        signature.signatureMethod,
 		"SignatureVersion":       signature.signatureVersion,
 		"X-NCMB-Timestamp":       signature.time.Format("2006-01-02T15:04:05.999Z0700"),
@@ -156,11 +156,13 @@ func (signature *Signature) Generate(method string, className string, options Ur
 		}
 		baseInfo += fmt.Sprintf("%s=%s", k, baseInfoMap[k])
 	}
-	baseInfo += fmt.Sprintf("&%s", queryString)
+	if queryString != "" {
+		baseInfo += fmt.Sprintf("&%s", queryString)
+	}
 	// 署名文字列の作成
 	signatureString := fmt.Sprintf("%s\n%s\n%s\n%s", method, signature.Fqdn(), path, baseInfo)
 	// HMACエンコーディング
-	h := hmac.New(sha256.New, []byte(signature.ncmb.clientKey))
+	h := hmac.New(sha256.New, []byte(signature.ncmb.ClientKey))
 	h.Write([]byte(signatureString))
 	// Base64エンコーディング
 	return base64.StdEncoding.EncodeToString(h.Sum(nil)), nil

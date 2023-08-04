@@ -40,7 +40,7 @@ func (query *Query) FetchAll() ([]Item, error) {
 		queries["count"] = 1
 	}
 	request := Request{ncmb: query.ncmb}
-	data, err := request.Get(query.className, queries)
+	data, err := request.Gets(query.className, queries)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (query *Query) FetchAll() ([]Item, error) {
 	}
 	var items []Item
 	for _, value := range aryResults {
-		item := Item{dataStore: &DataStore{ncmb: query.ncmb, className: query.className}}
+		item := Item{ncmb: query.ncmb, className: query.className}
 		item.Sets(value)
 		items = append(items, item)
 	}

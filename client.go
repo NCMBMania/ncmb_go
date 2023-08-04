@@ -3,21 +3,24 @@ package NCMB
 // import "fmt"
 
 type NCMB struct {
-	applicationKey string
-	clientKey      string
-	sessionToken   string
+	ApplicationKey string
+	ClientKey      string
+	SessionToken   string
 }
 
 func Initialize(applicationKey string, clientKey string) NCMB {
-	ncmb := NCMB{applicationKey: applicationKey, clientKey: clientKey}
+	ncmb := NCMB{ApplicationKey: applicationKey, ClientKey: clientKey}
 	return ncmb
 }
 
-func (ncmb *NCMB) DataStore(className string) DataStore {
-	dataStore := DataStore{ncmb: ncmb, className: className}
-	return dataStore
+func (ncmb *NCMB) Item(className string) Item {
+	return Item{ncmb: ncmb, className: className}
 }
 
 func (ncmb *NCMB) Query(className string) Query {
 	return Query{ncmb: ncmb, className: className}
+}
+
+func (ncmb *NCMB) GeoPoint(latitude float64, longitude float64) GeoPoint {
+	return GeoPoint{Type: "GeoPoint", Latitude: latitude, Longitude: longitude}
 }
