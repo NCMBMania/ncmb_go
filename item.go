@@ -226,7 +226,8 @@ func (item *Item) Fields() map[string]interface{} {
 			continue
 		}
 		if reflect.TypeOf(value).Name() == "Time" {
-			hash[key] = ItemDate{Type: "Date", Iso: value.(time.Time).Format("2006-01-02T15:04:05.000Z")}
+			val := value.(time.Time).UTC()
+			hash[key] = ItemDate{Type: "Date", Iso: val.Format("2006-01-02T15:04:05.000Z")}
 		} else {
 			hash[key] = value
 		}
@@ -259,4 +260,12 @@ func (item *Item) Fetch() (bool, error) {
 	}
 	item.Sets(hash)
 	return true, nil
+}
+
+func (item *Item) ToPointer() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"__type":    "Pointer",
+		"className": item.className,
+		"objectId":  item.ObjectId,
+	})
 }

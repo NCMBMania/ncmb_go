@@ -65,6 +65,27 @@ if err != nil {
 fmt.Println(items[0].GetDate("createDate"))
 ```
 
+Supported operands.
+
+- func EqualTo(key string, value interface{})
+- func NotEqualTo(key string, value interface{})
+- func LessThan(key string, value interface{})
+- func LessThanOrEqualTo(key string, value interface{})
+- func GreaterThan(key string, value interface{})
+- func GreaterThanOrEqualTo(key string, value interface{})
+- func In(key string, value interface{})
+- func NotIn(key string, value interface{})
+- func Exists(key string, value interface{})
+- func RegularExpression(key string, value string)
+- func InArray(key string, value interface{})
+- func NotInArray(key string, value interface{})
+- func AllInArray(key string, value interface{})
+- func Near(key string, value GeoPoint)
+- func WithinKilometers(key string, value GeoPoint, distance float64)
+- func WithinMiles(key string, value GeoPoint, distance float64)
+- func WithinRadians(key string, value GeoPoint, distance float64)
+- func WithinSquare(key string, southWest GeoPoint, northEast GeoPoint)
+
 ### GeoPoint
 
 #### Add GeoPoint as data

@@ -93,7 +93,7 @@ func (request *Request) Exec(method string, className string, params ExecOptions
 		}
 		data = bytes.NewBuffer(d)
 	}
-	fmt.Println(data)
+	fmt.Println(url)
 	req, err := http.NewRequest(method, url, data)
 	if err != nil {
 		return nil, err

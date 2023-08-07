@@ -102,9 +102,23 @@ func (signature *Signature) Headers(signatureString string) map[string]string {
 }
 
 func (signature *Signature) QueryString(queries *map[string]interface{}) (string, error) {
+	if queries == nil || len(*queries) == 0 {
+		return "", nil
+	}
+	// 自然順序でソート
+	var keys []string
+	for k := range *queries {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
 	var queryList []string
-	for key, value := range *queries {
+	for _, key := range keys {
+		value := (*queries)[key]
 		var val string
+		if value == nil {
+			continue
+		}
 		if reflect.TypeOf(value).Kind() == reflect.Map {
 			bytes, err := json.Marshal(value)
 			if err != nil {
@@ -161,6 +175,7 @@ func (signature *Signature) Generate(method string, className string, options Ur
 	}
 	// 署名文字列の作成
 	signatureString := fmt.Sprintf("%s\n%s\n%s\n%s", method, signature.Fqdn(), path, baseInfo)
+	// fmt.Println(signatureString)
 	// HMACエンコーディング
 	h := hmac.New(sha256.New, []byte(signature.ncmb.ClientKey))
 	h.Write([]byte(signatureString))

@@ -155,19 +155,17 @@ func TestItemSaveData(t *testing.T) {
 	hello.Set("date", time.Now())
 	geo := ncmb.GeoPoint(35.698683, 139.77421902)
 	hello.Set("geo", geo)
-	/*
-		bol, err := hello.Save()
-		if err != nil {
-			t.Errorf("hello.Save() = %T, %s", bol, err)
-		}
-
-		if hello.ObjectId == "" {
-			t.Errorf("hello.ObjectId = %s, want not empty", hello.ObjectId)
-		}
-
-		hello.Fetch()
-	*/
-	var bol bool
+	bol, err := hello.Save()
+	if err != nil {
+		t.Errorf("hello.Save() = %T, %s", bol, err)
+	}
+	if bol != true {
+		t.Errorf("hello.Save() = %T, want true", bol)
+	}
+	if hello.ObjectId == "" {
+		t.Errorf("hello.ObjectId = %s, want not empty", hello.ObjectId)
+	}
+	hello.Fetch()
 	str, err := hello.GetString("string")
 	if err != nil {
 		t.Errorf("hello.GetString(string) = %s, %s", str, err)
