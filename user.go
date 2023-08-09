@@ -73,6 +73,7 @@ func (user *User) RequestSignUpEmail() (bool, error) {
 }
 
 func (user *User) RequestPasswordReset() (bool, error) {
+	user.ncmb.SessionToken = ""
 	params := ExecOptions{}
 	path := "requestPasswordReset"
 	params.Path = &path
@@ -83,7 +84,6 @@ func (user *User) requestOrPasswordReset(params ExecOptions) (bool, error) {
 	params.ClassName = "users"
 	fields := map[string]interface{}{"mailAddress": user.fields["mailAddress"].(string)}
 	params.Fields = &fields
-	user.ncmb.SessionToken = ""
 	request := Request{ncmb: user.ncmb}
 	data, err := request.Post(params)
 	if err != nil {
