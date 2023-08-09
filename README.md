@@ -22,6 +22,38 @@ import (
 ncmb := NCMB.Initialize("YOUR_APPLICATION_KEY", "YOUR_CLIENT_KEY")
 ```
 
+### User
+
+#### Sign up
+
+```go
+user, err := ncmb.SignUpByAccount(userName, password)
+```
+
+#### Log in by username
+
+```go
+user, err := ncmb.Login(userName, password)
+```
+
+#### Log in by email address
+
+```go
+user, err := ncmb.LoginWithMailAddress(mailAddress, password)
+```
+
+#### Request registration email
+
+```go
+bol, err := ncmb.RequestSignUpEmail(mailAddress)
+```
+
+#### Logout
+
+```go
+bol, err := ncmb.Logout()
+```
+
 ### DataStore
 
 #### Save item

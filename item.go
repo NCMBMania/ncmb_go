@@ -12,7 +12,7 @@ import (
 
 type Item struct {
 	ncmb      *NCMB
-	className string
+	ClassName string
 	ObjectId  string
 	fields    map[string]interface{}
 }
@@ -184,7 +184,10 @@ func (item *Item) Sets(hash map[string]interface{}) *Item {
 
 func (item *Item) Create() (bool, error) {
 	request := Request{ncmb: item.ncmb}
-	data, err := request.Post(item.className, item.Fields())
+	options := ExecOptions{}
+	options.ClassName = item.ClassName
+	options.Fields = &item.fields
+	data, err := request.Post(options)
 	if err != nil {
 		return false, err
 	}
@@ -199,7 +202,12 @@ func (item *Item) Create() (bool, error) {
 
 func (item *Item) Update() (bool, error) {
 	request := Request{ncmb: item.ncmb}
-	data, err := request.Put(item.className, item.ObjectId, item.Fields())
+	options := ExecOptions{}
+	options.ClassName = item.ClassName
+	options.ObjectId = &item.ObjectId
+	fields := item.Fields()
+	options.Fields = &fields
+	data, err := request.Put(options)
 	if err != nil {
 		return false, err
 	}
@@ -237,7 +245,10 @@ func (item *Item) Fields() map[string]interface{} {
 
 func (item *Item) Delete() (bool, error) {
 	request := Request{ncmb: item.ncmb}
-	data, err := request.Delete(item.className, item.ObjectId)
+	params := ExecOptions{}
+	params.ClassName = item.ClassName
+	params.ObjectId = &item.ObjectId
+	data, err := request.Delete(params)
 	if err != nil {
 		return false, err
 	}
@@ -249,7 +260,10 @@ func (item *Item) Delete() (bool, error) {
 
 func (item *Item) Fetch() (bool, error) {
 	request := Request{ncmb: item.ncmb}
-	data, err := request.Get(item.className, item.ObjectId)
+	params := ExecOptions{}
+	params.ClassName = item.ClassName
+	params.ObjectId = &item.ObjectId
+	data, err := request.Get(params)
 	if err != nil {
 		return false, err
 	}
@@ -265,7 +279,7 @@ func (item *Item) Fetch() (bool, error) {
 func (item *Item) ToPointer() ([]byte, error) {
 	return json.Marshal(map[string]interface{}{
 		"__type":    "Pointer",
-		"className": item.className,
+		"className": item.ClassName,
 		"objectId":  item.ObjectId,
 	})
 }

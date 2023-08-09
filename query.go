@@ -119,7 +119,7 @@ func changeValue(value interface{}) interface{} {
 	if reflect.TypeOf(value).Name() == "Item" {
 		return map[string]interface{}{
 			"__type":    "Pointer",
-			"className": value.(*Item).className,
+			"className": value.(*Item).ClassName,
 			"objectId":  value.(*Item).ObjectId,
 		}
 	}
@@ -144,7 +144,10 @@ func (query *Query) FetchAll() ([]Item, error) {
 		queries["count"] = 1
 	}
 	request := Request{ncmb: query.ncmb}
-	data, err := request.Gets(query.className, queries)
+	params := ExecOptions{}
+	params.ClassName = query.className
+	params.Queries = &queries
+	data, err := request.Gets(params)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +167,7 @@ func (query *Query) FetchAll() ([]Item, error) {
 	}
 	var items []Item
 	for _, value := range aryResults {
-		item := Item{ncmb: query.ncmb, className: query.className}
+		item := Item{ncmb: query.ncmb, ClassName: query.className}
 		item.Sets(value)
 		items = append(items, item)
 	}

@@ -13,6 +13,7 @@ type Request struct {
 }
 
 type ExecOptions struct {
+	ClassName         string
 	Fields            *map[string]interface{}
 	ObjectId          *string
 	Queries           *map[string]interface{}
@@ -27,29 +28,24 @@ type NCMBError struct {
 	Error string `json:"error"`
 }
 
-func (request *Request) Post(className string, fields map[string]interface{}, multipart ...bool) ([]byte, error) {
-	params := ExecOptions{Multipart: multipart != nil, Fields: &fields}
-	return request.Exec("POST", className, params)
+func (request *Request) Post(options ...ExecOptions) ([]byte, error) {
+	return request.Exec("POST", options[0])
 }
 
-func (request *Request) Put(className string, objectId string, fields map[string]interface{}, multipart ...bool) ([]byte, error) {
-	params := ExecOptions{Multipart: multipart != nil, ObjectId: &objectId, Fields: &fields}
-	return request.Exec("PUT", className, params)
+func (request *Request) Put(options ...ExecOptions) ([]byte, error) {
+	return request.Exec("PUT", options[0])
 }
 
-func (request *Request) Gets(className string, queries map[string]interface{}, multipart ...bool) ([]byte, error) {
-	params := ExecOptions{Multipart: multipart != nil, Queries: &queries}
-	return request.Exec("GET", className, params)
+func (request *Request) Gets(options ...ExecOptions) ([]byte, error) {
+	return request.Exec("GET", options[0])
 }
 
-func (request *Request) Get(className string, objectId string) ([]byte, error) {
-	params := ExecOptions{ObjectId: &objectId}
-	return request.Exec("GET", className, params)
+func (request *Request) Get(options ...ExecOptions) ([]byte, error) {
+	return request.Exec("GET", options[0])
 }
 
-func (request *Request) Delete(className string, objectId string) ([]byte, error) {
-	params := ExecOptions{ObjectId: &objectId}
-	return request.Exec("DELETE", className, params)
+func (request *Request) Delete(options ...ExecOptions) ([]byte, error) {
+	return request.Exec("DELETE", options[0])
 }
 
 func (request *Request) Data(data *map[string]interface{}) ([]byte, error) {
@@ -63,21 +59,24 @@ func (request *Request) Data(data *map[string]interface{}) ([]byte, error) {
 	return jsonData, nil
 }
 
-func (request *Request) Exec(method string, className string, params ExecOptions) ([]byte, error) {
+func (request *Request) Exec(method string, params ExecOptions) ([]byte, error) {
 	opts := UrlOptions{ObjectId: params.ObjectId, DefinePath: params.Path, Queries: params.Queries}
 	s := Signature{ncmb: request.ncmb, IsScript: params.IsScript}
 	s.Initialize()
-	sig, err := s.Generate(method, className, opts)
+	sig, err := s.Generate(method, params.ClassName, opts)
 	if err != nil {
 		return nil, err
 	}
-	url, err := s.Url(className, opts)
+	url, err := s.Url(params.ClassName, opts)
 	if err != nil {
 		return nil, err
 	}
 	headers := s.Headers(sig)
 	if !params.Multipart {
 		headers["Content-Type"] = "application/json"
+	}
+	if request.ncmb.SessionToken != "" {
+		headers["X-NCMB-Apps-Session-Token"] = request.ncmb.SessionToken
 	}
 	if params.AdditionalHeaders != nil {
 		for key, value := range *params.AdditionalHeaders {
@@ -92,6 +91,7 @@ func (request *Request) Exec(method string, className string, params ExecOptions
 			return nil, err
 		}
 		data = bytes.NewBuffer(d)
+		fmt.Println(params.Fields)
 	}
 	fmt.Println(url)
 	req, err := http.NewRequest(method, url, data)
