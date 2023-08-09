@@ -56,3 +56,9 @@ func (ncmb *NCMB) Logout() (bool, error) {
 	user := User{ncmb: ncmb}
 	return user.Logout()
 }
+
+func (ncmb *NCMB) RequestPasswordReset(mailAddress string) (bool, error) {
+	user := User{ncmb: ncmb}
+	user.Set("mailAddress", mailAddress)
+	return user.RequestPasswordReset()
+}

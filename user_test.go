@@ -78,6 +78,19 @@ func TestRequestSignUpEmail(t *testing.T) {
 	TearDownUser(ncmb)
 }
 
+func TestRequestPasswordReset(t *testing.T) {
+	ncmb := SetUpUser()
+	mailAddress := os.Getenv("EMAIL")
+	bol, err := ncmb.RequestPasswordReset(mailAddress)
+	if err != nil {
+		t.Errorf("ncmb.RequestPasswordReset() = %T, %s", bol, err)
+	}
+	if bol == false {
+		t.Errorf("ncmb.RequestPasswordReset() = %T", bol)
+	}
+	TearDownUser(ncmb)
+}
+
 func TestLogout(t *testing.T) {
 	ncmb := SetUpUser()
 	mailAddress, password := os.Getenv("EMAIL"), os.Getenv("PASSWORD")

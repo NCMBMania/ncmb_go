@@ -66,12 +66,24 @@ func (user *User) loginAndSignUp(params ExecOptions) (*User, error) {
 }
 
 func (user *User) RequestSignUpEmail() (bool, error) {
-	fields := map[string]interface{}{"mailAddress": user.fields["mailAddress"].(string)}
 	params := ExecOptions{}
-	params.ClassName = "users"
-	params.Fields = &fields
 	path := "requestMailAddressUserEntry"
 	params.Path = &path
+	return user.requestOrPasswordReset(params)
+}
+
+func (user *User) RequestPasswordReset() (bool, error) {
+	params := ExecOptions{}
+	path := "requestPasswordReset"
+	params.Path = &path
+	return user.requestOrPasswordReset(params)
+}
+
+func (user *User) requestOrPasswordReset(params ExecOptions) (bool, error) {
+	params.ClassName = "users"
+	fields := map[string]interface{}{"mailAddress": user.fields["mailAddress"].(string)}
+	params.Fields = &fields
+	user.ncmb.SessionToken = ""
 	request := Request{ncmb: user.ncmb}
 	data, err := request.Post(params)
 	if err != nil {

@@ -48,6 +48,12 @@ user, err := ncmb.LoginWithMailAddress(mailAddress, password)
 bol, err := ncmb.RequestSignUpEmail(mailAddress)
 ```
 
+#### Reset password (only email auth)
+
+```go
+bol, err := ncmb.RequestPasswordReset(mailAddress)
+```
+
 #### Logout
 
 ```go
