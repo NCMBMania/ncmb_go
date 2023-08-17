@@ -21,6 +21,21 @@ func (ncmb *NCMB) Query(className string) Query {
 	return Query{ncmb: ncmb, className: className}
 }
 
+func (ncmb *NCMB) File(fileName string) File {
+	file := File{ncmb: ncmb}
+	file.Set("fileName", fileName)
+	file.Item.ClassName = "file"
+	file.Item.ncmb = ncmb
+	return file
+}
+
+func (ncmb *NCMB) Push() Push {
+	push := Push{ncmb: ncmb}
+	push.Item.ClassName = "push"
+	push.Item.ncmb = ncmb
+	return push
+}
+
 func (ncmb *NCMB) GeoPoint(latitude float64, longitude float64) GeoPoint {
 	return GeoPoint{Type: "GeoPoint", Latitude: latitude, Longitude: longitude}
 }
@@ -61,4 +76,8 @@ func (ncmb *NCMB) RequestPasswordReset(mailAddress string) (bool, error) {
 	user := User{ncmb: ncmb}
 	user.Set("mailAddress", mailAddress)
 	return user.RequestPasswordReset()
+}
+
+func (ncmb *NCMB) Acl() Acl {
+	return Acl{}
 }

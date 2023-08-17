@@ -37,7 +37,23 @@ func (item *Item) Set(key string, value interface{}) *Item {
 		if err != nil {
 			break
 		}
+		fmt.Println(val)
 		item.fields[key] = ItemDate{Type: "Date", Iso: val}
+	case "acl":
+		if value == nil {
+			break
+		}
+		if reflect.TypeOf(value).Name() == "Acl" {
+			item.fields[key] = value.(Acl)
+		} else {
+			acl := Acl{}
+			for key, value := range value.(map[string]interface{}) {
+				for key2, value2 := range value.(map[string]interface{}) {
+					acl.setAccess(key, key2, value2.(bool))
+				}
+			}
+			item.SetAcl(acl)
+		}
 	default:
 		item.fields[key] = value
 	}
@@ -70,6 +86,17 @@ func (item *Item) GetDate(key string, defaultValue ...time.Time) (time.Time, err
 		}
 		return time.Now(), fmt.Errorf("key is not found")
 	}
+	if reflect.TypeOf(value).Kind() == reflect.Map {
+		val := value.(map[string]interface{})
+		if val["__type"] != "Date" {
+			return time.Now(), fmt.Errorf("%s is not Date format (%s)", key, val)
+		}
+		date, err := time.Parse("2006-01-02T15:04:05.999Z0700", val["iso"].(string))
+		if err != nil {
+			return time.Now(), err
+		}
+		return date, nil
+	}
 	if reflect.TypeOf(value) != reflect.TypeOf(time.Now()) {
 		// Object?
 		if reflect.TypeOf(value).Kind() != reflect.Map {
@@ -96,7 +123,7 @@ func (item *Item) GetArray(key string, defaultValue ...[]interface{}) ([]interfa
 		}
 		return []interface{}{}, fmt.Errorf("key is not found")
 	}
-	if reflect.TypeOf(value) != reflect.TypeOf([]interface{}{}) {
+	if reflect.TypeOf(value).Kind() != reflect.Slice {
 		return []interface{}{}, fmt.Errorf("%s is not []interface{} (%s)", key, reflect.TypeOf(value))
 	}
 	return value.([]interface{}), nil
@@ -186,7 +213,8 @@ func (item *Item) Create() (bool, error) {
 	request := Request{ncmb: item.ncmb}
 	options := ExecOptions{}
 	options.ClassName = item.ClassName
-	options.Fields = &item.fields
+	fields := item.Fields()
+	options.Fields = &fields
 	data, err := request.Post(options)
 	if err != nil {
 		return false, err
@@ -220,12 +248,36 @@ func (item *Item) Update() (bool, error) {
 	return true, nil
 }
 
+func (item *Item) SetAcl(acl Acl) *Item {
+	return item.Set("acl", acl)
+}
+
+func (item *Item) GetAcl() (Acl, error) {
+	params := item.fields["acl"]
+	if params == nil {
+		acl := Acl{}
+		acl.SetPublicReadAccess(true).SetPublicWriteAccess(true)
+		return acl, nil
+	}
+	if reflect.TypeOf(params).Name() == "Acl" {
+		return params.(Acl), nil
+	}
+	if reflect.TypeOf(params).Kind() != reflect.Map {
+		return Acl{}, fmt.Errorf("acl is not Map (%s)", reflect.TypeOf(params))
+	}
+	valueMap := params.(map[string]map[string]bool)
+	acl := Acl{}
+	acl.Sets(valueMap)
+	return acl, nil
+}
+
 func (item *Item) Fields() map[string]interface{} {
 	if item.fields == nil {
 		return make(map[string]interface{})
 	}
 	hash := make(map[string]interface{})
 	for key, value := range item.fields {
+		fmt.Println(key, value, reflect.TypeOf(value).Name())
 		if slices.Index([]string{"objectId", "createDate", "updateDate"}, key) > -1 {
 			continue
 		}

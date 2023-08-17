@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"mime/multipart"
 	"net/http"
+	"net/textproto"
+	"strings"
 )
 
 type Request struct {
@@ -21,6 +24,7 @@ type ExecOptions struct {
 	Path              *string
 	Multipart         bool
 	IsScript          bool
+	Bytes             *[]byte
 }
 
 type NCMBError struct {
@@ -51,6 +55,13 @@ func (request *Request) Delete(options ...ExecOptions) ([]byte, error) {
 func (request *Request) Data(data *map[string]interface{}) ([]byte, error) {
 	if data == nil {
 		return nil, nil
+	}
+	if (*data)["acl"] != nil {
+		acl, err := (*data)["acl"].(Acl).ToJSON()
+		if err != nil {
+			return nil, err
+		}
+		(*data)["acl"] = acl
 	}
 	jsonData, err := json.Marshal(data)
 	if err != nil {
@@ -84,13 +95,51 @@ func (request *Request) Exec(method string, params ExecOptions) ([]byte, error) 
 		}
 	}
 	client := &http.Client{}
-	data := new(bytes.Buffer)
+	data := &bytes.Buffer{}
 	if method == "POST" || method == "PUT" {
-		d, err := request.Data(params.Fields)
-		if err != nil {
-			return nil, err
+		if params.Multipart {
+			mw := multipart.NewWriter(data)
+			part := make(textproto.MIMEHeader)
+			mimeType := http.DetectContentType(*params.Bytes)
+			mimeType = strings.Split(mimeType, ";")[0]
+			fmt.Println(mimeType)
+			part.Set("Content-Type", mimeType)
+			part.Set("Content-Disposition", `form-data; name="file"; filename="file"`)
+			pw, err := mw.CreatePart(part)
+			if err != nil {
+				return nil, err
+			}
+			io.Copy(pw, bytes.NewReader(*params.Bytes))
+			if err != nil {
+				return nil, err
+			}
+			acl := (*params.Fields)["acl"]
+			if acl != nil {
+				value, err := acl.(Acl).ToJSON()
+				if err != nil {
+					return nil, err
+				}
+				data, err := json.Marshal(value)
+				if err != nil {
+					return nil, err
+				}
+				err = mw.WriteField("acl", string(data))
+				if err != nil {
+					return nil, err
+				}
+			}
+			headers["Content-Type"] = mw.FormDataContentType()
+			err = mw.Close()
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			d, err := request.Data(params.Fields)
+			if err != nil {
+				return nil, err
+			}
+			data = bytes.NewBuffer(d)
 		}
-		data = bytes.NewBuffer(d)
 		fmt.Println(params.Fields)
 	}
 	fmt.Println(url)
@@ -98,6 +147,7 @@ func (request *Request) Exec(method string, params ExecOptions) ([]byte, error) 
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println(headers)
 	for key, value := range headers {
 		req.Header.Add(key, value)
 	}
