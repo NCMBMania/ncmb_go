@@ -81,3 +81,20 @@ func (ncmb *NCMB) RequestPasswordReset(mailAddress string) (bool, error) {
 func (ncmb *NCMB) Acl() Acl {
 	return Acl{}
 }
+
+func (ncmb *NCMB) Role(name string) Role {
+	role := Role{ncmb: ncmb}
+	role.Set("roleName", name)
+	role.Item.ClassName = "roles"
+	role.Item.ncmb = ncmb
+	role.ClassName = "roles"
+	return role
+}
+
+func (ncmb *NCMB) Installation() Installation {
+	installation := Installation{ncmb: ncmb}
+	installation.Item.ClassName = "installations"
+	installation.Item.ncmb = ncmb
+	installation.ClassName = "installations"
+	return installation
+}

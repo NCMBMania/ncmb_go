@@ -22,6 +22,11 @@ type ItemDate struct {
 	Iso  string `json:"iso"`
 }
 
+type AddRemoveOperation struct {
+	Op      string        `json:"__op"`
+	Objects []interface{} `json:"objects"`
+}
+
 func (item *Item) Set(key string, value interface{}) *Item {
 	if item.fields == nil {
 		item.fields = make(map[string]interface{})
@@ -194,6 +199,32 @@ func (item *Item) GetNumber(key string, defaultValue ...float64) (float64, error
 	return value.(float64), nil
 }
 
+func (item *Item) GetItem(key string, defaultValue ...Item) (Item, error) {
+	value := item.fields[key]
+	if value == nil {
+		if defaultValue != nil && len(defaultValue) > 0 {
+			return defaultValue[0], nil
+		}
+		return Item{}, fmt.Errorf("key %s is not found", key)
+	}
+	if reflect.TypeOf(value).Name() == "Item" {
+		return value.(Item), nil
+	}
+	if reflect.TypeOf(value).Kind() != reflect.Map {
+		return Item{}, fmt.Errorf("%s is not Map (%s)", key, reflect.TypeOf(value))
+	}
+	valueMap := value.(map[string]interface{})
+	if valueMap["__type"] != "Object" {
+		return Item{}, fmt.Errorf("%s is not Item format (%s)", key, valueMap)
+	}
+	className := valueMap["className"].(string)
+	delete(valueMap, "__type")
+	delete(valueMap, "className")
+	i := item.ncmb.Item(className)
+	i.Sets(valueMap)
+	return i, nil
+}
+
 func (item *Item) Save() (bool, error) {
 	if item.ObjectId == "" {
 		return item.Create()
@@ -277,7 +308,6 @@ func (item *Item) Fields() map[string]interface{} {
 	}
 	hash := make(map[string]interface{})
 	for key, value := range item.fields {
-		fmt.Println(key, value, reflect.TypeOf(value).Name())
 		if slices.Index([]string{"objectId", "createDate", "updateDate"}, key) > -1 {
 			continue
 		}
@@ -288,6 +318,9 @@ func (item *Item) Fields() map[string]interface{} {
 		if reflect.TypeOf(value).Name() == "Time" {
 			val := value.(time.Time).UTC()
 			hash[key] = ItemDate{Type: "Date", Iso: val.Format("2006-01-02T15:04:05.000Z")}
+		} else if reflect.TypeOf(value).Name() == "Item" {
+			val := value.(Item)
+			hash[key] = val.ToPointer()
 		} else {
 			hash[key] = value
 		}
@@ -328,10 +361,118 @@ func (item *Item) Fetch() (bool, error) {
 	return true, nil
 }
 
-func (item *Item) ToPointer() ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
+func (item *Item) ToPointer() map[string]interface{} {
+	return map[string]interface{}{
 		"__type":    "Pointer",
 		"className": item.ClassName,
 		"objectId":  item.ObjectId,
+	}
+}
+
+func (item *Item) GetClassName() string {
+	return item.ClassName
+}
+
+func (item *Item) GetObjectId() string {
+	return item.ObjectId
+}
+
+func (item *Item) Increment(key string, amount ...int) *Item {
+	amountInt := 1
+	if amount != nil && len(amount) > 0 {
+		amountInt = amount[0]
+	}
+	value := item.Get(key)
+	if value != nil && reflect.TypeOf(value).Kind() == reflect.Map {
+		num := value.(map[string]interface{})["amount"].(int)
+		amountInt += num
+		fmt.Println(num, amountInt)
+	}
+	item.Set(key, map[string]interface{}{
+		"__op":   "Increment",
+		"amount": amountInt,
 	})
+	return item
+}
+
+func (item *Item) Add(key string, object interface{}) *Item {
+	if object == nil {
+		return item
+	}
+	value := item.Get(key)
+	if item.ObjectId != "" {
+		if value != nil && reflect.TypeOf(value).Kind() == reflect.Map {
+			values := value.(AddRemoveOperation)
+			if values.Op == "Add" {
+				values.Objects = append(values.Objects, object)
+				item.Set(key, values)
+				return item
+			}
+		}
+		val := AddRemoveOperation{}
+		val.Op = "Add"
+		val.Objects = []interface{}{object}
+		item.Set(key, val)
+	} else {
+		if value != nil && reflect.TypeOf(value).Kind() != reflect.Map {
+			value = append(value.([]interface{}), object)
+			return item.Set(key, value)
+		}
+		item.Set(key, []interface{}{object})
+		return item
+	}
+	return item
+}
+
+func (item *Item) AddUnique(key string, object interface{}) *Item {
+	if object == nil {
+		return item
+	}
+	value := item.Get(key)
+	values := AddRemoveOperation{}
+	if value == nil || (reflect.TypeOf(value).Kind() == reflect.Map && value.(map[string]interface{})["__op"] != "AddUnique") {
+		values = AddRemoveOperation{
+			Op:      "AddUnique",
+			Objects: []interface{}{},
+		}
+	} else if reflect.TypeOf(value).Kind() == reflect.Slice {
+		values = AddRemoveOperation{
+			Op:      "AddUnique",
+			Objects: []interface{}{},
+		}
+		for _, v := range value.([]interface{}) {
+			values.Objects = append(values.Objects, v)
+		}
+	} else {
+		values = value.(AddRemoveOperation)
+	}
+	if slices.Index(values.Objects, object) == -1 {
+		values.Objects = append(values.Objects, object)
+	}
+	item.Set(key, values)
+	return item
+}
+
+func (item *Item) Remove(key string, object interface{}) *Item {
+	if object == nil {
+		return item
+	}
+	value := item.Get(key)
+	values := AddRemoveOperation{}
+	if value == nil || (reflect.TypeOf(value).Kind() == reflect.Map && value.(map[string]interface{})["__op"] != "Remove") {
+		values = AddRemoveOperation{
+			Op:      "Remove",
+			Objects: []interface{}{},
+		}
+	} else if reflect.TypeOf(value).Kind() == reflect.Slice {
+		values = AddRemoveOperation{
+			Op:      "Remove",
+			Objects: []interface{}{},
+		}
+	} else {
+		values = value.(AddRemoveOperation)
+	}
+	values.Objects = append(values.Objects, object)
+	item.Set(key, values)
+	return item
 }

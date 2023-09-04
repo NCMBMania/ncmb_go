@@ -162,3 +162,18 @@ func TestPushDelete(t *testing.T) {
 	}
 	TearDownFile(ncmb)
 }
+
+func TestPushFetchAll(t *testing.T) {
+	ncmb := SetUpFile()
+	query := ncmb.Query("push")
+	query.Limit(5)
+	query.EqualTo("message", "Hello, NCMB!")
+	ary, err := query.FetchAll()
+	if err != nil {
+		t.Error(err)
+	}
+	if len(ary) != 5 {
+		t.Errorf("FetchAll Error. Expected 5, but %d", len(ary))
+	}
+	TearDownFile(ncmb)
+}

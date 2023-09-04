@@ -89,6 +89,10 @@ func (acl Acl) ToJSON() (map[string]map[string]bool, error) {
 	permissions := make(map[string]map[string]bool)
 	if acl.permissions == nil {
 		acl.permissions = make(map[string]map[string]bool)
+		acl.permissions["*"] = map[string]bool{
+			"read":  true,
+			"write": true,
+		}
 	}
 	for k, v := range acl.permissions {
 		for k2, v2 := range v {

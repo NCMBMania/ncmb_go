@@ -17,7 +17,7 @@ func TestDeleteData(t *testing.T) {
 	applicationKey, clientKey := os.Getenv("APPLICATION_KEY"), os.Getenv("CLIENT_KEY")
 	ncmb := Initialize(applicationKey, clientKey)
 	query := ncmb.Query("Query")
-	query.Limit = 1000
+	query.Limit(1000)
 	items, err := query.FetchAll()
 	if err != nil {
 		t.Errorf("query.FetchAll() = %T, %s", items, err)
@@ -80,13 +80,18 @@ func TestQueryFetchAll2(t *testing.T) {
 	}
 }
 
-func SetUp() NCMB {
+func SetUpNCMB() NCMB {
 	err := godotenv.Load()
 	if err != nil {
 		panic(err)
 	}
 	applicationKey, clientKey := os.Getenv("APPLICATION_KEY"), os.Getenv("CLIENT_KEY")
 	ncmb := Initialize(applicationKey, clientKey)
+	return ncmb
+}
+
+func SetUp() NCMB {
+	ncmb := SetUpNCMB()
 	// create 5 items
 	t := time.Now()
 	for i := 0; i < 5; i++ {
@@ -102,7 +107,7 @@ func SetUp() NCMB {
 
 func TearDown(ncmb NCMB) {
 	query := ncmb.Query("Query")
-	query.Limit = 1000
+	query.Limit(1000)
 	items, err := query.FetchAll()
 	if err != nil {
 		panic(err)
@@ -121,7 +126,7 @@ func TearDown(ncmb NCMB) {
 func TestQueryFetchNumber(t *testing.T) {
 	ncmb := SetUp()
 	query := ncmb.Query("Query")
-	query.Limit = 1000
+	query.Limit(1000)
 	query.GreaterThan("index", 2)
 	items, err := query.FetchAll()
 	if err != nil {
@@ -136,7 +141,7 @@ func TestQueryFetchNumber(t *testing.T) {
 func TestQueryFetchNumber2(t *testing.T) {
 	ncmb := SetUp()
 	query := ncmb.Query("Query")
-	query.Limit = 1000
+	query.Limit(1000)
 	query.GreaterThan("index", 1)
 	query.LessThan("index", 4)
 	items, err := query.FetchAll()
@@ -152,7 +157,7 @@ func TestQueryFetchNumber2(t *testing.T) {
 func TestQueryFetchNumber3(t *testing.T) {
 	ncmb := SetUp()
 	query := ncmb.Query("Query")
-	query.Limit = 1000
+	query.Limit(1000)
 	query.GreaterThanOrEqualTo("index", 1)
 	query.LessThanOrEqualTo("index", 4)
 	items, err := query.FetchAll()
@@ -168,14 +173,14 @@ func TestQueryFetchNumber3(t *testing.T) {
 func TestQueryFetchBol(t *testing.T) {
 	ncmb := SetUp()
 	query := ncmb.Query("Query")
-	query.Limit = 1000
+	query.Limit(1000)
 	query.EqualTo("bol", true)
 	items1, err := query.FetchAll()
 	if err != nil {
 		t.Errorf("query.FetchAll() = %T, %s", items1, err)
 	}
 	query = ncmb.Query("Query")
-	query.Limit = 1000
+	query.Limit(1000)
 	query.NotEqualTo("bol", true)
 	items2, err := query.FetchAll()
 	if err != nil {
@@ -190,7 +195,7 @@ func TestQueryFetchBol(t *testing.T) {
 func TestQueryFetchDate(t *testing.T) {
 	ncmb := SetUp()
 	query := ncmb.Query("Query")
-	query.Limit = 1000
+	query.Limit(1000)
 	now := time.Now()
 	query.GreaterThan("date", now.Add(time.Hour*1))
 	items, err := query.FetchAll()
@@ -206,7 +211,7 @@ func TestQueryFetchDate(t *testing.T) {
 func TestQueryFetchDate2(t *testing.T) {
 	ncmb := SetUp()
 	query := ncmb.Query("Query")
-	query.Limit = 1000
+	query.Limit(1000)
 	now := time.Now().Add(time.Hour * 1)
 	query.GreaterThan("date", now)
 	query.LessThan("date", now.AddDate(0, 0, 2))
@@ -217,5 +222,14 @@ func TestQueryFetchDate2(t *testing.T) {
 	if len(items) != 2 {
 		t.Errorf("len(items) = %d, want 2", len(items))
 	}
+	TearDown(ncmb)
+}
+
+func TestQueryRelatedTo(t *testing.T) {
+	ncmb := SetUpNCMB()
+	item := ncmb.Item("Query")
+	item.ObjectId = "aaa"
+	query := ncmb.Query("Query")
+	query.RelatedTo(&item, "hoge")
 	TearDown(ncmb)
 }

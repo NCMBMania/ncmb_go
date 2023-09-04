@@ -114,3 +114,19 @@ func (user *User) Logout() (bool, error) {
 	user.ncmb.SessionToken = ""
 	return true, nil
 }
+
+func (user *User) ToPointer() map[string]string {
+	return map[string]string{
+		"__type":    "Pointer",
+		"className": "user",
+		"objectId":  user.ObjectId,
+	}
+}
+
+func (user *User) GetClassName() string {
+	return "user"
+}
+
+func (user *User) GetObjectId() string {
+	return user.Item.ObjectId
+}

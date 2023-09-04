@@ -131,3 +131,36 @@ func TestFileUpdateText(t *testing.T) {
 	}
 	TearDownFile(ncmb)
 }
+
+func TestFileFetchAll(t *testing.T) {
+	ncmb := SetUpFile()
+	fileName := "test2.txt"
+	file := ncmb.File(fileName)
+	text := []byte("Hello, NCMB!")
+	file.Bytes = text
+	bol, err := file.Upload()
+	if err != nil {
+		t.Errorf("file.Save() = %T, %s", bol, err)
+	}
+	query := ncmb.Query("files")
+	query.EqualTo("fileName", fileName)
+	files, err := query.FetchAll()
+	if err != nil {
+		t.Errorf("query.FetchAll() = %T, %s", files, err)
+	}
+	if len(files) != 1 {
+		t.Errorf("len(files) = %d, want 1", len(files))
+	}
+	f, err := files[0].GetString("fileName")
+	if err != nil {
+		t.Errorf("files[0].GetString() = %T, %s", f, err)
+	}
+	if f != fileName {
+		t.Errorf("files[0].GetString() = %s, want %s", f, fileName)
+	}
+	bol, err = file.Delete()
+	if err != nil {
+		t.Errorf("file.Delete() = %T, %s", bol, err)
+	}
+	TearDownFile(ncmb)
+}

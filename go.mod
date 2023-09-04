@@ -1,6 +1,6 @@
 module github.com/NCMBMania/ncmb_go
 
-go 1.19
+go 1.20
 
 require (
 	github.com/harakeishi/gats v0.0.0-20230219034858-055bc915842a // indirect
